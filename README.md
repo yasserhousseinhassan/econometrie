@@ -134,7 +134,13 @@ pip install numpy pandas scipy statsmodels arch matplotlib
 python analyse_series_temporelles.py
 ```
 
-Le script génère, sur un jeu de données simulé et reproductible (graine fixée) : les statistiques descriptives, les tests ADF, l'estimation ARMA(1,1), le test d'efficience faible et la régression APT complète assortie des VIF.
+Le script génère, sur un jeu de données simulé et reproductible (graine fixée) : les statistiques descriptives, les tests ADF, l'estimation ARMA(1,1), le test d'efficience faible et la régression APT complète assortie des VIF. Une figure de synthèse est enregistrée sous `figure_series_temporelles.png`.
+
+### 3.5 Visualisation
+
+![Analyse des séries temporelles](figure_series_temporelles.png)
+
+Synthèse en quatre panneaux : *(a)* le cours en niveau (non stationnaire) ; *(b)* les rentabilités logarithmiques, illustrant le **regroupement de volatilité** ; *(c)* les **autocorrélations** des rentabilités avec leur bande de confiance à 95 % (test d'efficience faible) ; *(d)* la **volatilité conditionnelle** estimée par le modèle GARCH(1,1).
 
 ---
 
@@ -153,6 +159,7 @@ Le script génère, sur un jeu de données simulé et reproductible (graine fix�
 | Fichier | Description |
 |---|---|
 | `analyse_series_temporelles.py` | Implémentation Python complète (ADF, ARMA, GARCH, APT, efficience). |
+| `figure_series_temporelles.png` | Figure générée : cours, rentabilités, ACF, volatilité GARCH. |
 | `econometrie.pdf` | Rapport d'étude détaillé : méthodologies, sorties EViews, analyse des résidus, conclusions économiques. |
 | `README.md` | Le présent document. |
 

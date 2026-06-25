@@ -21,9 +21,14 @@ Dépendances : numpy, pandas, scipy, statsmodels, arch, matplotlib
 ============================================================================
 """
 
+import sys
 import numpy as np
 import pandas as pd
 from scipy import stats
+
+# Sortie console en UTF-8 (symboles mathématiques : σ, β, χ²...)
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 import statsmodels.api as sm
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.stattools import adfuller, acf
@@ -35,6 +40,13 @@ try:
     _HAS_ARCH = True
 except ImportError:  # le module arch est optionnel
     _HAS_ARCH = False
+
+# matplotlib optionnel (sauvegarde des figures en PNG)
+try:
+    import matplotlib.pyplot as plt
+    _HAS_PLT = True
+except ImportError:
+    _HAS_PLT = False
 
 
 # ---------------------------------------------------------------------------
@@ -168,6 +180,48 @@ def estimer_apt(rentabilite: pd.Series, facteurs: pd.DataFrame):
 
 
 # ---------------------------------------------------------------------------
+# Visualisation : prix, rentabilités, autocorrélations, volatilité GARCH
+# ---------------------------------------------------------------------------
+def tracer_analyse(prix, rendements, nlags=20, fichier="figure_series_temporelles.png"):
+    if not _HAS_PLT:
+        print("  (matplotlib absent : graphique ignoré)")
+        return
+    fig, axes = plt.subplots(2, 2, figsize=(13, 9))
+
+    # (a) Évolution du cours
+    axes[0, 0].plot(prix.values, color="navy")
+    axes[0, 0].set_title("Cours de clôture (niveau)")
+    axes[0, 0].set_xlabel("t"); axes[0, 0].grid(alpha=0.3)
+
+    # (b) Rentabilités logarithmiques — regroupement de volatilité
+    axes[0, 1].plot(rendements.values, color="teal", lw=0.7)
+    axes[0, 1].set_title("Rentabilités log — regroupement de volatilité")
+    axes[0, 1].set_xlabel("t"); axes[0, 1].grid(alpha=0.3)
+
+    # (c) Autocorrélations (test d'efficience faible)
+    rho = acf(rendements, nlags=nlags, fft=True)[1:]
+    borne = 1.96 / np.sqrt(len(rendements))
+    axes[1, 0].bar(range(1, nlags + 1), rho, color="steelblue")
+    axes[1, 0].axhline(borne, color="red", ls="--")
+    axes[1, 0].axhline(-borne, color="red", ls="--")
+    axes[1, 0].set_title("Autocorrélations des rentabilités (bande 95 %)")
+    axes[1, 0].set_xlabel("Retard (lag)"); axes[1, 0].grid(alpha=0.3)
+
+    # (d) Volatilité conditionnelle estimée par GARCH(1,1)
+    if _HAS_ARCH:
+        res = estimer_garch(rendements, 1, 1)
+        axes[1, 1].plot(res.conditional_volatility, color="crimson")
+        axes[1, 1].set_title("Volatilité conditionnelle GARCH(1,1)")
+    else:
+        axes[1, 1].text(0.5, 0.5, "module 'arch' absent", ha="center")
+    axes[1, 1].set_xlabel("t"); axes[1, 1].grid(alpha=0.3)
+
+    fig.tight_layout()
+    fig.savefig(fichier, dpi=130)
+    print(f"\n  Figure enregistrée : {fichier}")
+
+
+# ---------------------------------------------------------------------------
 # Démonstration sur données simulées (reproductible)
 # ---------------------------------------------------------------------------
 def _demonstration():
@@ -219,6 +273,8 @@ def _demonstration():
     print(f"\n  R² = {modele_apt.rsquared:.4f} | Durbin-Watson = {dw_apt:.4f}")
     print("\n  Facteurs d'inflation de la variance (VIF) :")
     print(vif.to_string(index=False))
+
+    tracer_analyse(prix, r)
 
 
 if __name__ == "__main__":
